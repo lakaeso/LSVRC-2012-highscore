@@ -10,38 +10,60 @@ class ImageNetClassifier(nn.Module):
         self.device = device
 
         self.conv_layer_1 = nn.Sequential(
-            nn.Conv2d(3, 16, 5),
-            nn.ReLU(),
-            nn.BatchNorm2d(16),
-            nn.MaxPool2d(2),
-        )
-
-        self.conv_layer_2 = nn.Sequential(
-            nn.Conv2d(16, 32, 5),
-            nn.ReLU(),
-            nn.BatchNorm2d(32),
-            nn.MaxPool2d(2),
-        )
-
-        self.conv_layer_3 = nn.Sequential(
-            nn.Conv2d(32, 64, 5),
+            nn.Conv2d(3, 64, 7, 2, 3),
             nn.ReLU(),
             nn.BatchNorm2d(64),
             nn.MaxPool2d(2),
         )
-        
-        self.conv_layer_4 = nn.Sequential(
-            nn.Conv2d(64, 128, 5, stride=2),
+
+        self.conv_layer_2 = nn.Sequential(
+            nn.Conv2d(64, 64, 3, 1, 1),
             nn.ReLU(),
-            nn.BatchNorm2d(128),
+            nn.Conv2d(64, 64, 3, 1, 1),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, 3, 1, 1),
+            nn.ReLU(),
+            nn.BatchNorm2d(64),
             nn.MaxPool2d(2),
         )
 
+        self.conv_layer_3 = nn.Sequential(
+            nn.Conv2d(64, 128, 3, 2, 1),
+            nn.ReLU(),
+            nn.Conv2d(128, 128, 3, 1, 1),
+            nn.ReLU(),
+            nn.Conv2d(128, 128, 3, 1, 1),
+            nn.ReLU(),
+            nn.BatchNorm2d(128),
+        )
+        
+        self.conv_layer_4 = nn.Sequential(
+            nn.Conv2d(128, 256, 3, 2, 1),
+            nn.ReLU(),
+            nn.Conv2d(256, 256, 3, 1, 1),
+            nn.ReLU(),
+            nn.Conv2d(256, 256, 3, 1, 1),
+            nn.ReLU(),
+            nn.BatchNorm2d(256),
+        )
+
+        self.conv_layer_5 = nn.Sequential(
+            nn.Conv2d(256, 512, 3, 2, 1),
+            nn.ReLU(),
+            nn.Conv2d(512, 512, 3, 1, 1),
+            nn.ReLU(),
+            nn.Conv2d(512, 512, 3, 1, 1),
+            nn.ReLU(),
+            nn.BatchNorm2d(512),
+        )
+
+        self.avg_pool = nn.MaxPool2d(2)
+
         self.linear_layer = nn.Sequential(
-            nn.Linear(3200, 1280),
+            nn.Linear(2048, 2048),
             nn.ReLU(),
             nn.Dropout(0.2),
-            nn.Linear(1280, 1000),
+            nn.Linear(2048, 1000),
         )
 
         # init weights
@@ -61,6 +83,10 @@ class ImageNetClassifier(nn.Module):
         y = self.conv_layer_3.forward(y)
 
         y = self.conv_layer_4.forward(y)
+
+        y = self.conv_layer_5.forward(y)
+
+        y = self.avg_pool.forward(y)
 
         y = y.reshape(len(x), -1)
 
