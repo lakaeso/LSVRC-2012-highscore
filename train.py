@@ -26,7 +26,7 @@ PATH_TO_DATA = pathlib.Path('D:\\datasets\\IMAGENET2012')
 
 NUM_EPOCH = 30
 
-TRAIN_BATCH_SIZE = 128
+TRAIN_BATCH_SIZE = 64
 
 TEST_BATCH_SIZE = 64
 
@@ -42,11 +42,11 @@ transforms = v2.Compose([
 ])
 
 # datasets
-dataset_train = ImageFolder(pathlib.Path('D:\\datasets\\IMAGENET2012\\val'), transform=transforms) # ImageNet(PATH_TO_DATA, "val", transform=transforms)
+dataset_train = ImageFolder(pathlib.Path('D:\\datasets\\IMAGENET2012\\train'), transform=transforms) # ImageNet(PATH_TO_DATA, "val", transform=transforms)
 dataset_test = ImageFolder(pathlib.Path('D:\\datasets\\IMAGENET2012\\val'), transform=transforms) # ImageNet(PATH_TO_DATA, "val", transform=transforms)
 
 # dataloader
-dataloader_train = DataLoader(dataset_train, batch_size=TRAIN_BATCH_SIZE, shuffle=True, num_workers=4, collate_fn=collate_fn, persistent_workers=True)
+dataloader_train = DataLoader(dataset_train, batch_size=TRAIN_BATCH_SIZE, shuffle=True, num_workers=8, collate_fn=collate_fn, persistent_workers=True)
 dataloader_test = DataLoader(dataset_test, batch_size=TEST_BATCH_SIZE, shuffle=True, num_workers=1, collate_fn=collate_fn, persistent_workers=True)
 
 # model

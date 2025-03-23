@@ -2,6 +2,8 @@ import torch
 import torch.nn.functional as f
 import torch.nn as nn
 
+from utils import ResBlock
+
 
 class ImageNetClassifier(nn.Module):
     def __init__(self, device, *args, **kwargs):
@@ -19,10 +21,6 @@ class ImageNetClassifier(nn.Module):
         self.conv_layer_2 = nn.Sequential(
             nn.Conv2d(64, 64, 3, 1, 1),
             nn.ReLU(),
-            nn.Conv2d(64, 64, 3, 1, 1),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, 3, 1, 1),
-            nn.ReLU(),
             nn.BatchNorm2d(64),
             nn.MaxPool2d(2),
         )
@@ -30,29 +28,17 @@ class ImageNetClassifier(nn.Module):
         self.conv_layer_3 = nn.Sequential(
             nn.Conv2d(64, 128, 3, 2, 1),
             nn.ReLU(),
-            nn.Conv2d(128, 128, 3, 1, 1),
-            nn.ReLU(),
-            nn.Conv2d(128, 128, 3, 1, 1),
-            nn.ReLU(),
             nn.BatchNorm2d(128),
         )
         
         self.conv_layer_4 = nn.Sequential(
             nn.Conv2d(128, 256, 3, 2, 1),
             nn.ReLU(),
-            nn.Conv2d(256, 256, 3, 1, 1),
-            nn.ReLU(),
-            nn.Conv2d(256, 256, 3, 1, 1),
-            nn.ReLU(),
             nn.BatchNorm2d(256),
         )
 
         self.conv_layer_5 = nn.Sequential(
             nn.Conv2d(256, 512, 3, 2, 1),
-            nn.ReLU(),
-            nn.Conv2d(512, 512, 3, 1, 1),
-            nn.ReLU(),
-            nn.Conv2d(512, 512, 3, 1, 1),
             nn.ReLU(),
             nn.BatchNorm2d(512),
         )
@@ -115,7 +101,7 @@ class ImageNetClassifier(nn.Module):
                 self.eval()
                 with torch.no_grad():
                     test_acc = self.get_classification_error(dataloader_test) * 100
-                    print(f"epoch {i_epoch}, batch {i_batch} - loss {loss.item()}, test acc: {test_acc:.2f}")
+                    print(f"epoch {i_epoch:3}, batch {i_batch:3} - loss {loss.item():.2f}, test acc: {test_acc:.2f}")
                 self.train()
 
             loss.backward()
