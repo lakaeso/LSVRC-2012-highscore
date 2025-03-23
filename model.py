@@ -43,7 +43,7 @@ class ImageNetClassifier(nn.Module):
             nn.BatchNorm2d(512),
         )
 
-        self.avg_pool = nn.MaxPool2d(2)
+        self.max_pool = nn.MaxPool2d(2)
 
         self.linear_layer = nn.Sequential(
             nn.Linear(2048, 2048),
@@ -61,24 +61,42 @@ class ImageNetClassifier(nn.Module):
                 nn.init.constant_(m.bias, 0)
 
     def forward(self, x):
+        
+        # N, 3, 224, 224
 
-        y = self.conv_layer_1.forward(x)
+        y1 = self.conv_layer_1.forward(x)
+        
+        # N, 64, 56, 56
 
-        y = self.conv_layer_2.forward(y)
+        y2 = self.conv_layer_2.forward(y1)
+        
+        # N, 64, 28, 28
 
-        y = self.conv_layer_3.forward(y)
+        y3 = self.conv_layer_3.forward(y2)
 
-        y = self.conv_layer_4.forward(y)
+        # N, 128, 14, 14
 
-        y = self.conv_layer_5.forward(y)
+        y4 = self.conv_layer_4.forward(y3)
+        
+        # N, 256, 7, 7
 
-        y = self.avg_pool.forward(y)
+        y5 = self.conv_layer_5.forward(y4)
+        
+        # N, 512, 4, 4
 
-        y = y.reshape(len(x), -1)
+        y6 = self.max_pool.forward(y5)
+        
+        # N, 512, 2, 2
 
-        y = self.linear_layer(y)
+        y7 = y6.reshape(len(x), -1)
 
-        return y
+        # N, 2048
+
+        y8 = self.linear_layer(y7)
+
+        # N, 1000
+
+        return y8
 
     def classify(self, x):
         scores = self.forward(x)
