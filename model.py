@@ -21,6 +21,8 @@ class ImageNetClassifier(nn.Module):
         self.conv_layer_2 = nn.Sequential(
             nn.Conv2d(64, 64, 3, 1, 1),
             nn.ReLU(),
+            nn.Conv2d(64, 64, 3, 1, 1),
+            nn.ReLU(),
             nn.BatchNorm2d(64),
             nn.MaxPool2d(2),
         )
@@ -28,17 +30,23 @@ class ImageNetClassifier(nn.Module):
         self.conv_layer_3 = nn.Sequential(
             nn.Conv2d(64, 128, 3, 2, 1),
             nn.ReLU(),
+            nn.Conv2d(128, 128, 3, 1, 1),
+            nn.ReLU(),
             nn.BatchNorm2d(128),
         )
         
         self.conv_layer_4 = nn.Sequential(
             nn.Conv2d(128, 256, 3, 2, 1),
             nn.ReLU(),
+            nn.Conv2d(256, 256, 3, 1, 1),
+            nn.ReLU(),
             nn.BatchNorm2d(256),
         )
 
         self.conv_layer_5 = nn.Sequential(
             nn.Conv2d(256, 512, 3, 2, 1),
+            nn.ReLU(),
+            nn.Conv2d(512, 512, 3, 1, 1),
             nn.ReLU(),
             nn.BatchNorm2d(512),
         )
@@ -51,6 +59,10 @@ class ImageNetClassifier(nn.Module):
             nn.Dropout(0.2),
             nn.Linear(2048, 1000),
         )
+
+        self.skip_connection_1 = nn.Conv2d(3, 64, 3, 8, 1)
+        self.skip_connection_2 = nn.Conv2d(64, 256, 3, 4, 1)
+        self.skip_connection_3 = nn.Conv2d(256, 512, 3, 4, 1)
 
         # init weights
         for m in self.modules():
@@ -72,6 +84,10 @@ class ImageNetClassifier(nn.Module):
         
         # N, 64, 28, 28
 
+        y2 = y2 + self.skip_connection_1(x)
+
+        # N, 64, 28, 28
+
         y3 = self.conv_layer_3.forward(y2)
 
         # N, 128, 14, 14
@@ -80,11 +96,19 @@ class ImageNetClassifier(nn.Module):
         
         # N, 256, 7, 7
 
+        y4 = y4 + self.skip_connection_2(y2)
+
+        # N, 256, 7, 7
+
         y5 = self.conv_layer_5.forward(y4)
         
         # N, 512, 4, 4
 
         y6 = self.max_pool.forward(y5)
+        
+        # N, 512, 2, 2
+
+        y6 = y6 + self.skip_connection_3(y4)
         
         # N, 512, 2, 2
 
