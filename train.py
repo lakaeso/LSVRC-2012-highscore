@@ -29,7 +29,7 @@ PATH_TO_DATA = pathlib.Path('D:\\datasets\\IMAGENET2012')
 
 NUM_EPOCH = 500
 
-TRAIN_BATCH_SIZE = 256
+TRAIN_BATCH_SIZE = 128
 
 TEST_BATCH_SIZE = 128
 
@@ -57,11 +57,14 @@ dataset_train = ImageFolder(pathlib.Path('D:\\datasets\\IMAGENET2012\\train'), t
 dataset_test = ImageFolder(pathlib.Path('D:\\datasets\\IMAGENET2012\\val'), transform=transforms) # ImageNet(PATH_TO_DATA, "val", transform=transforms)
 
 # dataloader
-dataloader_train = DataLoader(dataset_train, batch_size=TRAIN_BATCH_SIZE, shuffle=True, num_workers=4, collate_fn=collate_fn, persistent_workers=True)
+dataloader_train = DataLoader(dataset_train, batch_size=TRAIN_BATCH_SIZE, shuffle=True, num_workers=8, collate_fn=collate_fn, persistent_workers=True)
 dataloader_test = DataLoader(dataset_test, batch_size=TEST_BATCH_SIZE, shuffle=True, num_workers=1, collate_fn=collate_fn, persistent_workers=True)
 
 # model
 model = ImageNetClassifier(DEVICE).to(DEVICE)
+
+# load
+model.load_state_dict(torch.load('./m32.pt', weights_only=True))
 
 # criterion and optim
 criterion = nn.CrossEntropyLoss()
