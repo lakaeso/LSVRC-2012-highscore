@@ -31,7 +31,7 @@ NUM_EPOCH = 500
 
 TRAIN_BATCH_SIZE = 256
 
-TEST_BATCH_SIZE = 128
+TEST_BATCH_SIZE = 512
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -53,10 +53,12 @@ transforms = v2.Compose([
 ])
 
 # datasets
+dataset_train = ImageFolder(pathlib.Path('D:\\datasets\\IMAGENET2012\\train'), transform=transforms) # ImageNet(PATH_TO_DATA, "val", transform=transforms)
 dataset_test = ImageFolder(pathlib.Path('D:\\datasets\\IMAGENET2012\\val'), transform=transforms) # ImageNet(PATH_TO_DATA, "val", transform=transforms)
 
 # dataloader
-dataloader_test = DataLoader(dataset_test, batch_size=TEST_BATCH_SIZE, shuffle=True, num_workers=4, collate_fn=collate_fn, persistent_workers=True)
+# dataloader_train = DataLoader(dataset_train, batch_size=TRAIN_BATCH_SIZE, shuffle=False, num_workers=4, collate_fn=collate_fn, persistent_workers=True)
+dataloader_test = DataLoader(dataset_test, batch_size=TEST_BATCH_SIZE, shuffle=False, num_workers=4, collate_fn=collate_fn, persistent_workers=True)
 
 # model
 model = ImageNetClassifier(DEVICE).to(DEVICE)
@@ -69,4 +71,4 @@ optim = torch.optim.SGD(model.parameters())
 if __name__ == '__main__':
     model.load_state_dict(torch.load('./m.pt', weights_only=True))
     model.eval()   
-    print(model.get_classification_error(dataloader_test, -1))
+    print(model.get_competition_error(dataloader_test))
