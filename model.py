@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as f
 import torch.nn as nn
-
+import numpy as np
 from utils import ResBlock
 
 
@@ -76,11 +76,11 @@ class ImageNetClassifier(nn.Module):
         
         # N, 3, 224, 224
 
-        y1 = self.conv_layer_1.forward(x)
+        y1 = self.conv_layer_1(x)
         
         # N, 64, 56, 56
 
-        y2 = self.conv_layer_2.forward(y1)
+        y2 = self.conv_layer_2(y1)
         
         # N, 64, 28, 28
 
@@ -88,11 +88,11 @@ class ImageNetClassifier(nn.Module):
 
         # N, 64, 28, 28
 
-        y3 = self.conv_layer_3.forward(y2)
+        y3 = self.conv_layer_3(y2)
 
         # N, 128, 14, 14
 
-        y4 = self.conv_layer_4.forward(y3)
+        y4 = self.conv_layer_4(y3)
         
         # N, 256, 7, 7
 
@@ -100,11 +100,11 @@ class ImageNetClassifier(nn.Module):
 
         # N, 256, 7, 7
 
-        y5 = self.conv_layer_5.forward(y4)
+        y5 = self.conv_layer_5(y4)
         
         # N, 512, 4, 4
 
-        y6 = self.max_pool.forward(y5)
+        y6 = self.max_pool(y5)
         
         # N, 512, 2, 2
 
@@ -123,7 +123,7 @@ class ImageNetClassifier(nn.Module):
         return y8
 
     def classify(self, x):
-        scores = self.forward(x)
+        scores = self(x)
         classes = torch.argmax(scores, dim=1)
 
         return classes
@@ -135,9 +135,9 @@ class ImageNetClassifier(nn.Module):
             
             optim.zero_grad()
 
-            y_predicted = self.forward(x)
+            y_predicted = self(x)
             
-            loss = criterion.forward(y_predicted, y)
+            loss = criterion(y_predicted, y)
 
             if i_batch % 100 == 0:
                 self.eval()
@@ -149,6 +149,8 @@ class ImageNetClassifier(nn.Module):
             loss.backward()
 
             optim.step()
+        
+        torch.save(self.state_dict(), f'./saved_models/model_{i_epoch}.pt')
             
     def get_classification_error(self, dataloader, max_i_batch = 2):
         with torch.no_grad():
@@ -167,3 +169,53 @@ class ImageNetClassifier(nn.Module):
                 
             
             return num_correct / num_total
+    
+    def get_competition_error(self, dataloader):
+        with torch.no_grad():
+
+            res = []
+            res_true = []
+
+            for i_batch, (x, y_true) in enumerate(dataloader):
+
+                scores = self(x)
+
+                _, indexes = torch.topk(scores, k=5, dim=1)
+
+                res.append(indexes.cpu().numpy())
+                res_true.append(y_true.reshape(-1, 1).cpu().numpy())
+
+                if i_batch % 100 == 0:
+                    print(i_batch)
+            
+            res = np.vstack(res)
+            res_true = np.vstack(res_true)
+
+            with open('./res.txt', 'w') as f:
+                np.savetxt(f, res, fmt='%s')
+            
+            with open('./res_true.txt', 'w') as f:
+                np.savetxt(f, res_true, fmt='%s')
+            
+
+            with open('./res.txt', 'r') as f:
+                entries_pred = list([line.split(' ') for line in f.read().split('\n')])
+
+            with open('./res_true.txt', 'r') as f:
+                entries_true = f.read().split('\n')
+
+            num_corr = 0
+            num_total = 0
+
+            for preds, true in zip(entries_pred, entries_true):
+                if preds == '' or true == '':
+                    break
+
+                if true in preds:
+                    num_corr += 1
+                num_total += 1
+
+                if int(true) % 100 == 0:
+                    print(true)
+            
+            print(num_corr / num_total)   
