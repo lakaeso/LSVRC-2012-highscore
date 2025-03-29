@@ -142,8 +142,8 @@ class ImageNetClassifier(nn.Module):
             if i_batch % 100 == 0:
                 self.eval()
                 with torch.no_grad():
-                    test_acc = self.get_classification_error(dataloader_test) * 100
-                    print(f"epoch {i_epoch:3}, batch {i_batch:3} - loss {loss.item():.2f}, test acc: {test_acc:.2f}")
+                    test_acc = self.get_competition_error_light(dataloader_test) * 100
+                    print(f"epoch {i_epoch:3}, batch {i_batch:3} - loss {loss.item():.2f}, train 5-acc: {test_acc:.2f}")
                 self.train()
 
             loss.backward()
@@ -169,6 +169,40 @@ class ImageNetClassifier(nn.Module):
                 
             
             return num_correct / num_total
+        
+    def get_competition_error_light(self, dataloader):
+        
+        with torch.no_grad():
+
+            res = []
+            res_true = []
+
+            for i_batch, (x, y_true) in enumerate(dataloader):
+
+                if i_batch == 20:
+                    break
+
+                scores = self(x)
+
+                _, indexes = torch.topk(scores, k=5, dim=1)
+
+                res.append(indexes.cpu().numpy())
+                res_true.append(y_true.cpu().numpy())
+            
+            # vstack
+            res = np.vstack(res)
+            res_true = np.hstack(res_true)
+
+            # count correct
+            n_true = 0
+            n_total = len(res)
+
+            for i in range(n_total):
+                if res_true[i] in res[i, :]:
+                    n_true += 1
+            
+            return n_true / n_total
+
     
     def get_competition_error(self, dataloader):
         with torch.no_grad():

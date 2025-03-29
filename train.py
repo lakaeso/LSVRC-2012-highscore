@@ -2,7 +2,7 @@ from torchvision.datasets import ImageNet, CIFAR100, ImageFolder
 
 from torchvision import transforms
 
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, RandomSampler
 
 import torch
 
@@ -27,11 +27,11 @@ import numpy as np
 # constants
 PATH_TO_DATA = pathlib.Path('D:\\datasets\\IMAGENET2012')
 
-NUM_EPOCH = 500
+NUM_EPOCH = 50
 
-TRAIN_BATCH_SIZE = 128
+TRAIN_BATCH_SIZE = 256
 
-TEST_BATCH_SIZE = 128
+TEST_BATCH_SIZE = 256
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -58,17 +58,17 @@ dataset_test = ImageFolder(pathlib.Path('D:\\datasets\\IMAGENET2012\\val'), tran
 
 # dataloader
 dataloader_train = DataLoader(dataset_train, batch_size=TRAIN_BATCH_SIZE, shuffle=True, num_workers=8, collate_fn=collate_fn, persistent_workers=True)
-dataloader_test = DataLoader(dataset_test, batch_size=TEST_BATCH_SIZE, shuffle=True, num_workers=1, collate_fn=collate_fn, persistent_workers=True)
+dataloader_test = DataLoader(dataset_test, batch_size=TEST_BATCH_SIZE, shuffle=True, num_workers=2, collate_fn=collate_fn, persistent_workers=True)
 
 # model
 model = ImageNetClassifier(DEVICE).to(DEVICE)
 
 # load
-model.load_state_dict(torch.load('./m32.pt', weights_only=True))
+model.load_state_dict(torch.load('./saved_models/baseline.pt', weights_only=True))
 
 # criterion and optim
 criterion = nn.CrossEntropyLoss()
-optim = torch.optim.SGD(model.parameters())
+optim = torch.optim.SGD(model.parameters(), lr=1e-5)
 
 # train loop
 if __name__ == '__main__':
