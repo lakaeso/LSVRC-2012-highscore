@@ -69,6 +69,6 @@ optim = torch.optim.SGD(model.parameters())
 
 # train loop
 if __name__ == '__main__':
-    model.load_state_dict(torch.load('./m.pt', weights_only=True))
+    model.load_state_dict(torch.load('./saved_models/baseline.pt', weights_only=True))
     model.eval()   
     print(model.get_competition_error(dataloader_test))
