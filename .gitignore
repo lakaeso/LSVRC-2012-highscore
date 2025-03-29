@@ -1,5 +1,5 @@
 __pycache__
 .vscode
 unpack.py
-.txt
-.pt
+*.txt
+*.pt
