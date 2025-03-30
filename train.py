@@ -44,9 +44,7 @@ np.random.seed(SEED)
 
 # transforms
 transforms = v2.Compose([
-    # v2.Resize((500, 500)),,
-    #v2.ToImage(),
-    #v2.ToDtype(torch.float, scale=False),
+    # todo: random flip and crop
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
@@ -64,11 +62,11 @@ dataloader_test = DataLoader(dataset_test, batch_size=TEST_BATCH_SIZE, shuffle=T
 model = ImageNetClassifier(DEVICE).to(DEVICE)
 
 # load
-model.load_state_dict(torch.load('./saved_models/baseline.pt', weights_only=True))
+model.load_state_dict(torch.load('./saved_models/baseline3.pt', weights_only=True))
 
 # criterion and optim
 criterion = nn.CrossEntropyLoss()
-optim = torch.optim.SGD(model.parameters(), lr=1e-5)
+optim = torch.optim.AdamW(model.parameters(), lr=1e-6)
 
 # train loop
 if __name__ == '__main__':
