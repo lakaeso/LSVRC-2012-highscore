@@ -5,6 +5,6 @@ My attempt at conquering LSVRC 2012's classification task leaderboard.
   <img src="./preview.png" />
 </p>
 
-Model, which can be found in src/model.py, is a CNN model. It uses with three skip connections to prevent gradient vanishing and and to achieve stable weight convergence.
+Model, which can be found in src/model.py, is a CNN model. It uses three skip connections to prevent gradient vanishing and to achieve stable convergence.
 
 Currently, model achieves about 55% accuracy on test dataset. This project is still WIP.
