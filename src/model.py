@@ -221,24 +221,21 @@ class ImageNetClassifier(nn.Module):
 
                 res.append(indexes.cpu().numpy())
                 res_true.append(y_true.reshape(-1, 1).cpu().numpy())
-
-                if i_batch % 100 == 0:
-                    print(i_batch)
             
             res = np.vstack(res)
             res_true = np.vstack(res_true)
 
-            with open('./res.txt', 'w') as f:
+            with open('./tmp/res.txt', 'w') as f:
                 np.savetxt(f, res, fmt='%s')
             
-            with open('./res_true.txt', 'w') as f:
+            with open('./tmp/res_true.txt', 'w') as f:
                 np.savetxt(f, res_true, fmt='%s')
             
 
-            with open('./res.txt', 'r') as f:
+            with open('./tmp/res.txt', 'r') as f:
                 entries_pred = list([line.split(' ') for line in f.read().split('\n')])
 
-            with open('./res_true.txt', 'r') as f:
+            with open('./tmp/res_true.txt', 'r') as f:
                 entries_true = f.read().split('\n')
 
             num_corr = 0
