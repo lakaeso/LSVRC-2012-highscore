@@ -142,7 +142,10 @@ class ImageNetClassifier(nn.Module):
             if i_batch % 100 == 0:
                 self.eval()
                 with torch.no_grad():
-                    test_acc = self.get_competition_error_light(dataloader_test) * 100
+                    if i_batch % 500 == 0:
+                        test_acc = self.get_competition_error_light(dataloader_test) * 100
+                    else:
+                        test_acc = -1
                     print(f"epoch {i_epoch:3}, batch {i_batch:3} - loss {loss.item():.2f}, train 5-acc: {test_acc:.2f}")
                 self.train()
 
