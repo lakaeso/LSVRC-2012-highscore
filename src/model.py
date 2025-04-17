@@ -182,7 +182,7 @@ class ImageNetClassifier(nn.Module):
 
             for i_batch, (x, y_true) in enumerate(dataloader):
 
-                if i_batch == 20:
+                if i_batch == 500:
                     break
 
                 scores = self(x)
@@ -248,8 +248,5 @@ class ImageNetClassifier(nn.Module):
                 if true in preds:
                     num_corr += 1
                 num_total += 1
-
-                if int(true) % 100 == 0:
-                    print(true)
             
-            print(num_corr / num_total)   
+            return num_corr / num_total   

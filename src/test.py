@@ -2,7 +2,7 @@ from torchvision.datasets import ImageNet, CIFAR100, ImageFolder
 
 from torchvision import transforms
 
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Subset
 
 import torch
 
@@ -57,8 +57,8 @@ dataset_train = ImageFolder(pathlib.Path('D:\\datasets\\IMAGENET2012\\train'), t
 dataset_test = ImageFolder(pathlib.Path('D:\\datasets\\IMAGENET2012\\val'), transform=transforms) # ImageNet(PATH_TO_DATA, "val", transform=transforms)
 
 # dataloader
-# dataloader_train = DataLoader(dataset_train, batch_size=TRAIN_BATCH_SIZE, shuffle=False, num_workers=4, collate_fn=collate_fn, persistent_workers=True)
-dataloader_test = DataLoader(dataset_test, batch_size=TEST_BATCH_SIZE, shuffle=False, num_workers=4, collate_fn=collate_fn, persistent_workers=True)
+dataloader_train = DataLoader(dataset_train, batch_size=TRAIN_BATCH_SIZE, shuffle=True, num_workers=4, collate_fn=collate_fn, persistent_workers=True)
+dataloader_test = DataLoader(dataset_test, batch_size=TEST_BATCH_SIZE, shuffle=True, num_workers=4, collate_fn=collate_fn, persistent_workers=True)
 
 # model
 model = ImageNetClassifier(DEVICE).to(DEVICE)
@@ -69,6 +69,7 @@ optim = torch.optim.SGD(model.parameters())
 
 # train loop
 if __name__ == '__main__':
-    model.load_state_dict(torch.load('./saved_models/baseline3.pt', weights_only=True), strict=False)
+    model.load_state_dict(torch.load('./saved_models/baseline4.pt', weights_only=True), strict=False)
     model.eval()   
+    print(model.get_competition_error_light(dataloader_train))
     print(model.get_competition_error(dataloader_test))
