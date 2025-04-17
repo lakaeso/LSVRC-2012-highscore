@@ -18,7 +18,7 @@ from torch.utils.data.dataloader import default_collate
 
 from utils import *
 
-from model import ImageNetClassifier
+from model import CustomClassifier, Resnet50BasedClassifier, VGG11BasedClassifier
 
 import random
 
@@ -29,7 +29,7 @@ PATH_TO_DATA = pathlib.Path('D:\\datasets\\IMAGENET2012')
 
 NUM_EPOCH = 50
 
-TRAIN_BATCH_SIZE = 256
+TRAIN_BATCH_SIZE = 64
 
 TEST_BATCH_SIZE = 256
 
@@ -57,18 +57,18 @@ dataset_train = ImageFolder(pathlib.Path('D:\\datasets\\IMAGENET2012\\train'), t
 dataset_test = ImageFolder(pathlib.Path('D:\\datasets\\IMAGENET2012\\val'), transform=transforms) # ImageNet(PATH_TO_DATA, "val", transform=transforms)
 
 # dataloader
-dataloader_train = DataLoader(dataset_train, batch_size=TRAIN_BATCH_SIZE, shuffle=True, num_workers=8, collate_fn=collate_fn, persistent_workers=True)
-dataloader_test = DataLoader(dataset_test, batch_size=TEST_BATCH_SIZE, shuffle=True, num_workers=2, collate_fn=collate_fn, persistent_workers=True)
+dataloader_train = DataLoader(dataset_train, batch_size=TRAIN_BATCH_SIZE, shuffle=True, num_workers=1, collate_fn=collate_fn, persistent_workers=True)
+dataloader_test = DataLoader(dataset_test, batch_size=TEST_BATCH_SIZE, shuffle=True, num_workers=1, collate_fn=collate_fn, persistent_workers=True)
 
 # model
-model = ImageNetClassifier(DEVICE).to(DEVICE)
+model = VGG11BasedClassifier().to(DEVICE)
 
 # load
 #model.load_state_dict(torch.load('./saved_models/baseline4.pt', weights_only=True))
 
 # criterion and optim
 criterion = nn.CrossEntropyLoss()
-optim = torch.optim.Adam(model.parameters(), lr=1e-5)
+optim = torch.optim.Adam(model.parameters(), lr=1e-3)
 
 # train loop
 if __name__ == '__main__':

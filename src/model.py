@@ -3,13 +3,148 @@ import torch.nn.functional as f
 import torch.nn as nn
 import numpy as np
 from utils import ResBlock
+from torchvision.models import resnet50, ResNet50_Weights, ResNet, VGG, vgg11, VGG11_Weights
 
 
-class ImageNetClassifier(nn.Module):
-    def __init__(self, device, *args, **kwargs):
+
+class IClassifier(nn.Module):
+    
+    def get_model_name(self):
+        raise NotImplementedError()
+
+    def forward(self):
+        raise NotImplementedError()
+
+    def epoch_train(self, i_epoch, dataloader_train, dataloader_test, optim, criterion):
+        
+        self.train()
+        
+        for i_batch, (x, y) in enumerate(dataloader_train):
+            
+            optim.zero_grad()
+
+            y_predicted = self(x)
+            
+            loss = criterion(y_predicted, y)
+
+            if i_batch % 5 == 0:
+                self.eval()
+                with torch.no_grad():
+                    if i_batch % 500 == 0:
+                        test_acc = self.get_competition_error_light(dataloader_test) * 100
+                    else:
+                        test_acc = -1
+                    print(f"epoch {i_epoch:3}, batch {i_batch:3} - loss {loss.item():.2f}, train 5-acc: {test_acc:.2f}")
+                self.train()
+
+            loss.backward()
+
+            optim.step()
+    
+    def get_competition_error_light(self, dataloader):
+        with torch.no_grad():
+
+            res = []
+            res_true = []
+
+            for i_batch, (x, y_true) in enumerate(dataloader):
+
+                if i_batch == 10:
+                    break
+
+                scores = self(x)
+
+                _, indexes = torch.topk(scores, k=5, dim=1)
+
+                res.append(indexes.cpu().numpy())
+                res_true.append(y_true.cpu().numpy())
+            
+            # vstack
+            res = np.vstack(res)
+            res_true = np.hstack(res_true)
+
+            # count correct
+            n_true = 0
+            n_total = len(res)
+
+            for i in range(n_total):
+                if res_true[i] in res[i, :]:
+                    n_true += 1
+            
+            return n_true / n_total
+
+    def get_competition_error(self, dataloader):
+        
+        with torch.no_grad():
+
+            res = []
+            res_true = []
+
+            for i_batch, (x, y_true) in enumerate(dataloader):
+
+                scores = self(x)
+
+                _, indexes = torch.topk(scores, k=5, dim=1)
+
+                res.append(indexes.cpu().numpy())
+                res_true.append(y_true.reshape(-1, 1).cpu().numpy())
+            
+            res = np.vstack(res)
+            res_true = np.vstack(res_true)
+
+            with open(f'./tmp/res_{self.get_model_name()}.txt', 'w') as f:
+                np.savetxt(f, res, fmt='%s')
+            
+            with open(f'./tmp/res_{self.get_model_name()}_true.txt', 'w') as f:
+                np.savetxt(f, res_true, fmt='%s')
+            
+
+            with open(f'./tmp/res_{self.get_model_name()}.txt', 'r') as f:
+                entries_pred = list([line.split(' ') for line in f.read().split('\n')])
+
+            with open(f'./tmp/res_{self.get_model_name()}_true.txt', 'r') as f:
+                entries_true = f.read().split('\n')
+
+            num_corr = 0
+            num_total = 0
+
+            for preds, true in zip(entries_pred, entries_true):
+                if preds == '' or true == '':
+                    break
+
+                if true in preds:
+                    num_corr += 1
+                num_total += 1
+            
+            return num_corr / num_total  
+
+    def save_training_progress(self, epoch, optim, loss):
+        torch.save(
+            {
+                'epoch': epoch,
+                'model_state_dict': self.state_dict(),
+                'optimizer_state_dict': optim.state_dict(),
+                'loss': loss,
+            }, 
+            './saved_models/' + self.get_model_name()
+        )
+
+    def load_training_progress(self, epoch, optim, loss):
+        checkpoint = torch.load('./saved_models/' + self.get_model_name(), weights_only=True)
+        self.load_state_dict(checkpoint['model_state_dict'])
+        epoch = checkpoint['epoch']
+        optim.load_state_dict(checkpoint['optimizer_state_dict'])
+        loss = checkpoint['loss']
+
+        return epoch, optim, loss
+
+
+
+class CustomClassifier(IClassifier):
+
+    def __init__(self, *args, **kwargs):
+        
         super().__init__(*args, **kwargs)
-
-        self.device = device
 
         self.conv_layer_1 = nn.Sequential(
             nn.Conv2d(3, 64, 7, 2, 3),
@@ -72,6 +207,9 @@ class ImageNetClassifier(nn.Module):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
 
+    def get_model_name(self):
+        return "custom_classifier"
+
     def forward(self, x):
         
         # N, 3, 224, 224
@@ -122,131 +260,72 @@ class ImageNetClassifier(nn.Module):
 
         return y8
 
-    def classify(self, x):
-        scores = self(x)
-        classes = torch.argmax(scores, dim=1)
 
-        return classes
+
+class Resnet50BasedClassifier(IClassifier):
     
-    def epoch_train(self, i_epoch, dataloader_train, dataloader_test, optim, criterion):
-
-        self.train()
-        for i_batch, (x, y) in enumerate(dataloader_train):
-            
-            optim.zero_grad()
-
-            y_predicted = self(x)
-            
-            loss = criterion(y_predicted, y)
-
-            if i_batch % 100 == 0:
-                self.eval()
-                with torch.no_grad():
-                    if i_batch % 500 == 0:
-                        test_acc = self.get_competition_error_light(dataloader_test) * 100
-                    else:
-                        test_acc = -1
-                    print(f"epoch {i_epoch:3}, batch {i_batch:3} - loss {loss.item():.2f}, train 5-acc: {test_acc:.2f}")
-                self.train()
-
-            loss.backward()
-
-            optim.step()
+    def __init__(self, *args, **kwargs):
         
-        torch.save(self.state_dict(), f'./saved_models/model_{i_epoch}.pt')
-            
-    def get_classification_error(self, dataloader, max_i_batch = 2):
+        super().__init__(*args, **kwargs)
+
+        self.resnet : ResNet = resnet50(weights=ResNet50_Weights.IMAGENET1K_V1)
+
+        self.c = list(self.resnet.children())[:-1]
+
+        self.linear = nn.Sequential(nn.Linear(2048, 1000), nn.Linear(1000, 1000))
+
+    def get_classifier_name(self):
+        return "resnet50_based_classifier"
+
+    def forward(self, x: torch.Tensor):
+
         with torch.no_grad():
-            num_correct = num_total = 0
+            y = x
+            for m in self.c:
+                y = m(y)
 
-            for i_batch, (x, y_true) in enumerate(dataloader):
-
-                if i_batch == max_i_batch:
-                    break
-
-                y_predicted = self.classify(x)
-
-                num_correct += (y_predicted == y_true).sum() 
-                num_total += len(y_predicted)
-
-                
-            
-            return num_correct / num_total
+        y = y.reshape(-1, 2048)
         
-    def get_competition_error_light(self, dataloader):
-        
-        with torch.no_grad():
+        y = self.linear(y)
 
-            res = []
-            res_true = []
-
-            for i_batch, (x, y_true) in enumerate(dataloader):
-
-                if i_batch == 500:
-                    break
-
-                scores = self(x)
-
-                _, indexes = torch.topk(scores, k=5, dim=1)
-
-                res.append(indexes.cpu().numpy())
-                res_true.append(y_true.cpu().numpy())
-            
-            # vstack
-            res = np.vstack(res)
-            res_true = np.hstack(res_true)
-
-            # count correct
-            n_true = 0
-            n_total = len(res)
-
-            for i in range(n_total):
-                if res_true[i] in res[i, :]:
-                    n_true += 1
-            
-            return n_true / n_total
-
+        return y
     
-    def get_competition_error(self, dataloader):
+
+
+class VGG11BasedClassifier(IClassifier):
+
+    def __init__(self, *args, **kwargs):
+        
+        super().__init__(*args, **kwargs)
+
+        self.vgg = vgg11(weights=VGG11_Weights)
+
+        self.conv_network = list(self.vgg.children())[0]
+
+        self.adaptive_pool = nn.AdaptiveAvgPool2d((5, 5))
+        
+        self.linear_network = nn.Sequential(
+            nn.Linear(12800, 4096),
+            nn.Dropout(),
+            nn.ReLU(),
+            nn.Linear(4096, 2048),
+            nn.Dropout(),
+            nn.ReLU(),
+            nn.Linear(2048, 1000)
+        )
+
+    def get_model_name(self):
+        return "vgg11_based_classifier"
+
+    def forward(self, x):
+        
         with torch.no_grad():
+            y = self.conv_network(x)
 
-            res = []
-            res_true = []
+        y = self.adaptive_pool(y)
+        
+        y = y.flatten(1)
 
-            for i_batch, (x, y_true) in enumerate(dataloader):
+        y = self.linear_network(y)
 
-                scores = self(x)
-
-                _, indexes = torch.topk(scores, k=5, dim=1)
-
-                res.append(indexes.cpu().numpy())
-                res_true.append(y_true.reshape(-1, 1).cpu().numpy())
-            
-            res = np.vstack(res)
-            res_true = np.vstack(res_true)
-
-            with open('./tmp/res.txt', 'w') as f:
-                np.savetxt(f, res, fmt='%s')
-            
-            with open('./tmp/res_true.txt', 'w') as f:
-                np.savetxt(f, res_true, fmt='%s')
-            
-
-            with open('./tmp/res.txt', 'r') as f:
-                entries_pred = list([line.split(' ') for line in f.read().split('\n')])
-
-            with open('./tmp/res_true.txt', 'r') as f:
-                entries_true = f.read().split('\n')
-
-            num_corr = 0
-            num_total = 0
-
-            for preds, true in zip(entries_pred, entries_true):
-                if preds == '' or true == '':
-                    break
-
-                if true in preds:
-                    num_corr += 1
-                num_total += 1
-            
-            return num_corr / num_total   
+        return y
